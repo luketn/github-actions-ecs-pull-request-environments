@@ -1,0 +1,34 @@
+# Deploys a temporary environment for testing a version of the code when a pull request is created / updated with a 'deploy' label
+name: Deploy PR Environment
+concurrency:
+  group: "deploy-${{ github.event.pull_request.head.ref }}"
+  cancel-in-progress: false
+
+on:
+  pull_request:
+    types: [ labeled, synchronize ]
+
+jobs:
+  deploy-dev-pr-environment:
+    if: contains(github.event.pull_request.labels.*.name, 'deploy')
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          EVENT_CONTEXT: ${{ toJSON(github.event) }}
+        run: echo $EVENT_CONTEXT
+      - run: |
+          PR_DEPLOY_ENVIRONMENT=dev
+          echo "Deploying environment for branch '${{ github.event.pull_request.head.ref }}' with labels '${{ join(github.event.pull_request.labels.*.name) }}' (pull request ${{ github.event.action }}) to environment ${PR_DEPLOY_ENVIRONMENT}!"
+          echo "Contains output: ${{ contains(github.event.pull_request.labels.*.name, 'deploy-to-production') }}"
+          sleep 300
+  deploy-prod-pr-environment:
+    if: contains(github.event.pull_request.labels.*.name, 'deploy-to-production')
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          EVENT_CONTEXT: ${{ toJSON(github.event) }}
+        run: echo $EVENT_CONTEXT
+      - run: |
+          PR_DEPLOY_ENVIRONMENT=prod
+          echo "Deploying environment for branch '${{ github.event.pull_request.head.ref }}' with labels '${{ join(github.event.pull_request.labels.*.name) }}' (pull request ${{ github.event.action }}) to environment ${PR_DEPLOY_ENVIRONMENT}!"
+          echo "Contains output: ${{ contains(github.event.pull_request.labels.*.name, 'deploy-to-production') }}"
